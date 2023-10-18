@@ -3,18 +3,23 @@ package entity
 import (
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	uuid "github.com/satori/go.uuid"
 )
 
 type Bank struct {
-	ID        string    `json:"id"`
-	Code      string    `json:"code"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Base `valid:"required"`
+	Code string `json:"code" valid:"notnull"`
+	Name string `json:"name" valid:"notnull"`
 }
 
 func (bank *Bank) isValid() error {
+	_, validationError := govalidator.ValidateStruct(bank)
+
+	if validationError != nil {
+		return validationError
+	}
+
 	return nil
 }
 
