@@ -8,6 +8,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+func init() {
+	govalidator.SetFieldsRequiredByDefault(true)
+}
+
 const (
 	TransactionPending   string = "pending"
 	TransactionCompleted string = "completed"
@@ -28,12 +32,12 @@ type Transactions struct {
 type Transaction struct {
 	Base              `valid:"required"`
 	AccountFrom       *Account `valid:"-"`
-	AccountFromID     string   `gorm:"column:account_from_id;type:uuid;not null" valid:"-"`
+	AccountFromID     string   `gorm:"column:account_from_id;type:uuid;not null" valid:"notnull"`
 	Amount            float64  `json:"amount" gorm:"type:float" valid:"notnull"`
 	PixKeyTo          *PixKey  `valid:"-"`
 	PixKeyToID        string   `gorm:"column:pix_key_to_id;type:uuid;not null" valid:"notnull"`
 	Status            string   `json:"status" gorm:"type:varchar(20)" valid:"notnull"`
-	Description       string   `json:"description" gorm:"type:varchar(255)" valid:"notnull"`
+	Description       string   `json:"description" gorm:"type:varchar(255)" valid:"-"`
 	CancelDescription string   `json:"cancel_description" gorm:"type:varchar(255)" valid:"-"`
 }
 
@@ -48,7 +52,7 @@ func (transaction *Transaction) isValid() error {
 		return errors.New("Invalid transaction status")
 	}
 
-	if transaction.AccountFrom.ID == transaction.PixKeyTo.ID {
+	if transaction.AccountFromID == transaction.PixKeyTo.AccountID {
 		return errors.New("The source and destination account can't be the same")
 	}
 
@@ -61,11 +65,13 @@ func (transaction *Transaction) isValid() error {
 
 func NewTransaction(accountFrom *Account, amount float64, pixKey *PixKey, description string) (*Transaction, error) {
 	transaction := Transaction{
-		AccountFrom: accountFrom,
-		Amount:      amount,
-		PixKeyTo:    pixKey,
-		Status:      TransactionPending,
-		Description: description,
+		AccountFrom:   accountFrom,
+		AccountFromID: accountFrom.ID,
+		Amount:        amount,
+		PixKeyTo:      pixKey,
+		PixKeyToID:    pixKey.ID,
+		Status:        TransactionPending,
+		Description:   description,
 	}
 
 	transaction.ID = uuid.NewV4().String()

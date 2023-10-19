@@ -8,6 +8,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+func init() {
+	govalidator.SetFieldsRequiredByDefault(true)
+}
+
 type IPixKeyRepository interface {
 	RegisterKey(pixKey *PixKey) (*PixKey, error)
 	FindKeyByKind(key string, kind string) (*PixKey, error)
@@ -18,12 +22,12 @@ type IPixKeyRepository interface {
 }
 
 type PixKey struct {
-	Base      `valid:"require"`
-	Kind      string `json:"kind" gorm:"type:varchar(20)" valid:"notnull"`
-	Key       string `json:"key" gorm:"type:varchar(255)" valid:"notnull"`
-	Account   *Account
-	AccountID string `gorm:"column:account_id;type:uuid;not null" valid:"-"`
-	Status    string `json:"status" gorm:"type:varchar(20)" valid:"notnull"`
+	Base      `valid:"required"`
+	Kind      string   `json:"kind" gorm:"type:varchar(20)" valid:"notnull"`
+	Key       string   `json:"key" gorm:"type:varchar(255)" valid:"notnull"`
+	Account   *Account `valid:"-"`
+	AccountID string   `gorm:"column:account_id;type:uuid;not null" valid:"-"`
+	Status    string   `json:"status" gorm:"type:varchar(20)" valid:"notnull"`
 }
 
 func (pixKey *PixKey) isValid() error {
@@ -46,10 +50,11 @@ func (pixKey *PixKey) isValid() error {
 
 func NewPixKey(kind string, key string, account *Account) (*PixKey, error) {
 	pixKey := PixKey{
-		Kind:    kind,
-		Key:     key,
-		Account: account,
-		Status:  "active",
+		Kind:      kind,
+		Key:       key,
+		Account:   account,
+		AccountID: account.ID,
+		Status:    "active",
 	}
 
 	pixKey.ID = uuid.NewV4().String()
