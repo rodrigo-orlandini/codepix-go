@@ -9,9 +9,10 @@ import (
 
 type Account struct {
 	Base      `valid:"required"`
-	OwnerName string `json:"owner_name" valid:"notnull"`
-	Bank      *Bank  `valid:"-"`
-	Number    string `json:"number" valid:"notnull"`
+	OwnerName string    `json:"owner_name" valid:"notnull"`
+	Bank      *Bank     `valid:"-"`
+	Number    string    `json:"number" valid:"notnull"`
+	PixKeys   []*PixKey `valid:"-"`
 }
 
 func (account *Account) isValid() error {
@@ -40,5 +41,5 @@ func NewAccount(bank *Bank, ownerName string, number string) (*Account, error) {
 		return nil, validationError
 	}
 
-	return account, nil
+	return &account, nil
 }
