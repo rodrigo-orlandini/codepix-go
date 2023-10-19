@@ -1,1 +1,5 @@
+# Extra folders
 .pgdata/
+
+# Environment
+.env
