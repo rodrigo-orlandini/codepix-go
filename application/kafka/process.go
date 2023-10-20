@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"os"
 
 	confkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/jinzhu/gorm"
@@ -27,8 +28,8 @@ func NewKafkaProcessor(database *gorm.DB, producer *confkafka.Producer, delivery
 
 func (processor *KafkaProcessor) Consume() {
 	kafkaConfig := &confkafka.ConfigMap{
-		"bootstrap.servers": "kafka:9092",
-		"group.id":          "consumergroup",
+		"bootstrap.servers": os.Getenv("kafkaBootstrapServers"),
+		"group.id":          os.Getenv("kafkaConsumerGroupId"),
 		"auto.offset.reset": "earliest",
 	}
 
@@ -38,7 +39,7 @@ func (processor *KafkaProcessor) Consume() {
 		panic(err)
 	}
 
-	topics := []string{"teste"}
+	topics := []string{os.Getenv("kafkaTransactionsTopic"), os.Getenv("kafkaTransactionConfirmationTopic")}
 	consumer.SubscribeTopics(topics, nil)
 
 	fmt.Println("Kafka consumer has been started.")
@@ -47,7 +48,7 @@ func (processor *KafkaProcessor) Consume() {
 		msg, err := consumer.ReadMessage(-1)
 
 		if err == nil {
-			fmt.Println(string(msg.Value))
+			processor.processMessage(msg)
 		}
 	}
 }
@@ -107,7 +108,7 @@ func (processor *KafkaProcessor) processTransaction(msg *confkafka.Message) erro
 	return nil
 }
 
-func (process *KafkaProcessor) processTransactionConfirmation(msg *confkafka.Message) error {
+func (processor *KafkaProcessor) processTransactionConfirmation(msg *confkafka.Message) error {
 	transaction := dto.NewTransactionDTO()
 	err := transaction.ParseJson(msg.Value)
 
@@ -115,10 +116,10 @@ func (process *KafkaProcessor) processTransactionConfirmation(msg *confkafka.Mes
 		return err
 	}
 
-	transactionUseCase := factory.TransactionUseCaseFactory(process.Database)
+	transactionUseCase := factory.TransactionUseCaseFactory(processor.Database)
 
 	if transaction.Status == entity.TransactionConfirmed {
-		err = process.confirmTransaction(transaction, transactionUseCase)
+		err = processor.confirmTransaction(transaction, transactionUseCase)
 
 		if err != nil {
 			return err
@@ -136,7 +137,7 @@ func (process *KafkaProcessor) processTransactionConfirmation(msg *confkafka.Mes
 	return nil
 }
 
-func (process *KafkaProcessor) confirmTransaction(transaction *dto.TransactionDTO, transactionUseCase *usecase.TransactionUseCase) error {
+func (processor *KafkaProcessor) confirmTransaction(transaction *dto.TransactionDTO, transactionUseCase *usecase.TransactionUseCase) error {
 	confirmedTransaction, err := transactionUseCase.Confirm(transaction.ID)
 	if err != nil {
 		return err
@@ -148,7 +149,7 @@ func (process *KafkaProcessor) confirmTransaction(transaction *dto.TransactionDT
 		return err
 	}
 
-	err = Publish(string(transactionJson), topic, process.Producer, process.DeliveryChannel)
+	err = Publish(string(transactionJson), topic, processor.Producer, processor.DeliveryChannel)
 	if err != nil {
 		return err
 	}
