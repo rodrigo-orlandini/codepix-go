@@ -1,10 +1,9 @@
 /*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+Copyright © 2023 Rodrigo Orlandini <rodrigosorlandini@hotmail.com>
 */
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	confkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -18,8 +17,6 @@ var kafkaCmd = &cobra.Command{
 	Use:   "kafka",
 	Short: "Start consuming transactions using Apache Kafka",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Generating message...")
-
 		deliveryChannel := make(chan confkafka.Event)
 		database := db.ConnectDB(os.Getenv("env"))
 		producer := kafka.NewKafkaProducer()
