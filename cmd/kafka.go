@@ -5,9 +5,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	confkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/rodrigo-orlandini/codepix-go/application/kafka"
+	db "github.com/rodrigo-orlandini/codepix-go/infrastructure/database"
 	"github.com/spf13/cobra"
 )
 
@@ -19,11 +21,13 @@ var kafkaCmd = &cobra.Command{
 		fmt.Println("Generating message...")
 
 		deliveryChannel := make(chan confkafka.Event)
-
+		database := db.ConnectDB(os.Getenv("env"))
 		producer := kafka.NewKafkaProducer()
 
-		kafka.Publish("Ola Kafka", "teste", producer, deliveryChannel)
-		kafka.DeliveryReport(deliveryChannel)
+		go kafka.DeliveryReport(deliveryChannel)
+
+		kafkaProcessor := kafka.NewKafkaProcessor(database, producer, deliveryChannel)
+		kafkaProcessor.Consume()
 	},
 }
 

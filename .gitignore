@@ -1,5 +1,6 @@
 # Extra folders
 .pgdata/
+.vscode/
 
 # Environment
 .env
