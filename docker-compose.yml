@@ -5,6 +5,8 @@ services:
     build: .
     volumes:
       - .:/go/src/
+    ports:
+      - "50051:50051"
 
   db:
     image: postgres:16-alpine
